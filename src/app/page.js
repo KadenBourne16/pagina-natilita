@@ -16,7 +16,7 @@ export default function HomePage() {
               <div className="relative w-[200px] h-[200px] sm:w-[250px] sm:h-[250px] lg:w-[300px] lg:h-[300px] mx-auto mb-8 lg:mb-0 lg:order-2 lg:ml-auto">
                 <div className="w-full h-full rounded-full overflow-hidden border-4 border-pink-500 shadow-xl">
                   <Image
-                    src="/homeimage/joselovenobackground.jpg"
+                    src="/homeimage/JoseloveNoBackground.jpg"
                     alt="Joselove"
                     width={400}
                     height={400}
