@@ -1,10 +1,21 @@
 'use client';
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import Head from 'next/head';
 import Link from 'next/link';
 import Image from 'next/image';
+import { SaveWish } from '@/server/wish-message';
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+import { GetWishess } from '@/server/get_wishes';
+import { urlFor } from "@/lib/imageUrl";
+import Navbar from '../components/navbar';
 
 const WishMe = () => {
+  const [wishes, setWishes] = useState([]);
+const [isLoading, setIsLoading] = useState(true);
+const eventSourceRef = useRef(null);
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [formData, setFormData] = useState({
     username: '',
@@ -13,6 +24,7 @@ const WishMe = () => {
     imagePreview: ''
   });
   const fileInputRef = useRef(null);
+ 
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -21,6 +33,79 @@ const WishMe = () => {
       [name]: value
     }));
   };
+
+  const fetchInformation = async() => {
+    const fetch_wishes_response = await GetWishess();
+    if(fetch_wishes_response.type === "success"){
+      setWishes(fetch_wishes_response.data)
+    }
+    console.log(fetch_wishes_response.data);
+  } 
+
+useEffect(() => {
+  fetchInformation();
+}, [])
+
+useEffect(() => {
+  // Function to fetch wishes
+  const fetchWishes = async () => {
+    try {
+      const response = await fetch("/api/wishes");
+      if (!response.ok) throw new Error("Failed to fetch wishes");
+      if(response){
+        fetchInformation();
+      }
+
+    } catch (error) {
+      console.error("Error fetching wishes:", error);
+      toast.error("Failed to load wishes");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Initial fetch
+  fetchWishes();
+
+  // Set up SSE connection
+  const setupSSE = () => {
+    const eventSource = new EventSource("/api/sse");
+
+    eventSource.onmessage = (event) => {
+      if (!event.data) return; // 👈 ignore heartbeat or empty events
+
+      try {
+        const data = JSON.parse(event.data);
+        if (data.type === "update") {
+          fetchWishes();
+        } else if (data.type === "connected") {
+          console.log("SSE connected");
+        }
+      } catch (err) {
+        console.warn("Non-JSON SSE message:", event.data);
+      }
+    };
+
+    eventSource.onerror = (error) => {
+      console.error("SSE Error:", error);
+      eventSource.close();
+
+      // Reconnect after 5s
+      setTimeout(setupSSE, 5000);
+    };
+
+    eventSourceRef.current = eventSource;
+  };
+
+  setupSSE();
+
+  // Cleanup on unmount
+  return () => {
+    if (eventSourceRef.current) {
+      eventSourceRef.current.close();
+    }
+  };
+}, []);
 
   const handleImageChange = (e) => {
     const file = e.target.files[0];
@@ -47,29 +132,49 @@ const WishMe = () => {
     
     // Validate form fields
     if (!formData.username.trim()) {
-      alert('Please enter your username');
+      toast.error('Please enter your username', {
+        position: "top-right",
+        autoClose: 5000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      });
       return;
     }
     
     if (!formData.message.trim()) {
-      alert('Please enter your birthday wish');
+      toast.error('Please enter your birthday wish', {
+        position: "top-right",
+        autoClose: 5000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      });
       return;
     }
     
+    const toastId = toast.loading('Sending your wish...', {
+      position: "top-right"
+    });
+    
     try {
-      const response = await fetch('/api/wish-message', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          username: formData.username,
-          message: formData.message
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to submit wish');
+      // Create FormData to properly handle file upload
+      const formDataToSend = new FormData();
+      formDataToSend.append('username', formData.username.trim());
+      formDataToSend.append('message', formData.message.trim());
+      
+      // Only append image if it exists
+      if (formData.image) {
+        formDataToSend.append('image', formData.image);
+      }
+      
+      const result = await SaveWish(formDataToSend);
+      console.log('Server response:', result);
+      
+      if (!result.success) {
+        throw new Error(result.message || 'Failed to save wish');
       }
       
       // Reset form on successful submission
@@ -84,11 +189,29 @@ const WishMe = () => {
       setIsModalOpen(false);
       
       // Show success message
-      alert('Your wish has been sent successfully! 🎉');
+      toast.update(toastId, {
+        render: result.message || 'Your wish has been sent successfully! 🎉',
+        type: "success",
+        isLoading: false,
+        autoClose: 5000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      });
       
-    } catch (error) {
-      console.error('Error submitting form:', error);
-      alert('There was an error sending your wish. Please try again.');
+    } catch (err) {
+      console.error("Error occurred:", err);
+      toast.update(toastId, {
+        render: err.message || 'There was an error sending your wish. Please try again.',
+        type: "error",
+        isLoading: false,
+        autoClose: 5000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      });
     }
   };
 
@@ -96,8 +219,42 @@ const WishMe = () => {
     fileInputRef.current?.click();
   };
 
+  // Animation variants
+  const container = {
+    hidden: { opacity: 0 },
+    show: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1
+      }
+    }
+  };
+
+  const item = {
+    hidden: { opacity: 0, y: 20 },
+    show: { 
+      opacity: 1, 
+      y: 0,
+      transition: {
+        duration: 0.5
+      }
+    }
+  };
+
   return (
     <div className="bg-gradient-to-br from-violet-200 to-pink-200 min-h-screen">
+      <ToastContainer
+        position="top-right"
+        autoClose={5000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="light"
+      />
       <Head>
         <title>Birthday Wishes</title>
         <meta name="description" content="Send your birthday wishes" />
@@ -114,83 +271,89 @@ const WishMe = () => {
 
       <div className="relative flex h-auto min-h-screen w-full flex-col group/design-root overflow-x-hidden" style={{ fontFamily: '"Plus Jakarta Sans", "Noto Sans", sans-serif' }}>
         <div className="layout-container flex h-full grow flex-col">
-          <header className="flex items-center justify-between whitespace-nowrap px-4 sm:px-6 lg:px-10 py-4">
-            <div className="flex items-center gap-3 text-zinc-900">
-              <svg className="h-8 w-8 text-pink-500" fill="none" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
-                <path d="M6 6H42L36 24L42 42H6L12 24L6 6Z" fill="currentColor" />
-              </svg>
-              <h2 className="text-xl font-bold tracking-tighter">Joselove's Birthday</h2>
-            </div>
-            <nav className="hidden md:flex items-center gap-6">
-              <Link href="/" className="text-zinc-700 hover:text-zinc-900 text-sm font-medium">Home</Link>
-            </nav>
-            <div className="flex items-center gap-4">
-              <button className="flex items-center justify-center rounded-full h-10 w-10 text-zinc-700 hover:bg-white/50">
-                <span className="material-symbols-outlined">notifications</span>
-              </button>
-              <div 
-                className="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-10" 
-                style={{ backgroundImage: `url('https://lh3.googleusercontent.com/aida-public/AB6AXuDN9kvkOq7QRCG3fILY9xlcriJkFrj5DgIl755DZi3oGmdfzXGWtxsC69ZK_tSWBK00DHMubos8o1iP-NoUcd2cu0rs9QjiGBl1xWxNdw1OuW4ciuWFMgvS94ZVEzSSnV_tpeJ6xFZF-O88ejfmF7oGYCoEhnicB0npoZbup4Db5etRO5BbsmSwOwnYvKqNaLkwAda8hA1bryk7jawbvmrI3KQvYvHcQxZfzQDO-QwDN0R3HPZ8m5-9kDkIKxG9iUCOUw_BwaP2IrM')` }}
-              />
-            </div>
-          </header>
+          <Navbar/>
 
-          <main className="flex-1 px-4 py-8 sm:px-6 lg:px-8">
-            <div className="max-w-5xl mx-auto">
-              <div className="text-center mb-12">
-                <h1 className="text-4xl md:text-5xl font-bold tracking-tighter text-zinc-900">Birthday Wishes</h1>
-                <p className="mt-4 text-lg text-zinc-600">Share your heartfelt wishes for Joselove's special day.</p>
-              </div>
+          <main className="flex-1 px-4 py-8 sm:px-6 lg:px-8 pt-24">
+            <div className="max-w-6xl mx-auto">
+              <motion.div 
+                className="text-center mb-16"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5 }}
+              >
+                <h1 className="text-4xl md:text-5xl font-bold tracking-tight text-zinc-900 mb-4">
+                  Birthday Wishes
+                </h1>
+                <p className="text-lg text-zinc-600 max-w-2xl mx-auto">
+                  Share your heartfelt wishes for Joselove's special day.
+                </p>
+                
+                <motion.div 
+                  className="mt-12 text-center"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.2 }}
+                >
+                  <button 
+                    onClick={() => setIsModalOpen(true)}
+                    className="inline-flex items-center justify-center gap-2 rounded-xl bg-fuchsia-500 hover:bg-fuchsia-600 text-white font-bold px-8 py-3.5 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-0.5"
+                  >
+                    <span className="text-xl">+</span>
+                    <span>Add Your Wish</span>
+                  </button>
+                </motion.div>
+              </motion.div>
               
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {/* Wish Card 1 */}
-                <div className="bg-white/70 rounded-xl shadow-lg backdrop-blur-sm overflow-hidden transform transition-all duration-300 hover:scale-105 hover:shadow-2xl">
-                  <div className="p-6 flex flex-col gap-4">
-                    <div className="flex items-center gap-4">
-                      <div 
-                        className="w-12 h-12 rounded-full bg-cover bg-center" 
-                        style={{ backgroundImage: 'url("https://lh3.googleusercontent.com/aida-public/AB6AXuDNjw3bNWCK69vOEnbP0HlAsm-Ipw8A0ZZd-sFntgxhI3euAPwWg-LSigZfV3fuEOriQsRRx5ralkm8HbUTfyiKK2xUxk2KLQNTDOsBYU7d66qzotfbV6NmBonc7dGwki2GexYgqiDEXPPmUMCSRMWo7HIvUGiJtDmHFJ8dnH0Kxl6WN6a4n_IViL5P2nA3EvF_MBlvnsg7_9S7cYJQCmvzsg7p-H9dwZWFa_Erm78uLDgkp38GX_TM5rhSWVv5O5SzXJMSnzxM-UI")' }}
-                      />
-                      <div>
-                        <p className="font-bold text-zinc-800 text-lg">From Alex</p>
-                      </div>
-                    </div>
-                    <p className="text-zinc-600">Wishing you a day filled with joy and laughter, and a year ahead full of amazing adventures. Happy Birthday, Joselove!</p>
-                  </div>
+              {isLoading ? (
+                <div className="flex justify-center items-center py-20">
+                  <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-fuchsia-500"></div>
                 </div>
-
-                {/* Wish Card 2 */}
-                <div className="bg-white/70 rounded-xl shadow-lg backdrop-blur-sm overflow-hidden transform transition-all duration-300 hover:scale-105 hover:shadow-2xl">
-                  <div className="p-6 flex flex-col gap-4">
-                    <div className="flex items-center gap-4">
-                      <div 
-                        className="w-12 h-12 rounded-full bg-cover bg-center" 
-                        style={{ backgroundImage: 'url("https://lh3.googleusercontent.com/aida-public/AB6AXuCGdv-Kw0SVGahfC78JbHscCqFvtA97LsMLTtPMwBl_cOaA1iqbK7PgVgHirMMu-gDWkT2Mw_dIhR8NSxBvOb7sgAi3N7-AQCAjiZyMh-6NQ5RfXDT6zJ1Pmeu4OkJ5pz0kbLJedd7KMoa6eHc3xQpKYyU528iEbB7OkXgB1kzUVEsMtlAIt1a_B43WylSQXu_XarI_YGITexfZpkN2hX6bxuhSNsnfxN6xPFt3PClGlsGvFCDoJRv0tUtiNcgRZzHFCQvPcZ2r5ms")' }}
-                      />
-                      <div>
-                        <p className="font-bold text-zinc-800 text-lg">From Emily</p>
+              ) : (
+                <motion.div 
+                  className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
+                  variants={container}
+                  initial="hidden"
+                  animate="show"
+                >
+                  {wishes.map((wish, index) => (
+                    <motion.div
+                      key={wish._id}
+                      variants={item}
+                      className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow duration-300"
+                      whileHover={{ y: -5 }}
+                    >
+                      <div className="p-6 flex flex-col gap-4">
+                        <div className="flex items-center gap-4">
+                          <div className="w-14 h-14 rounded-full bg-pink-50 flex-shrink-0 flex items-center justify-center overflow-hidden border-2 border-white shadow-sm">
+                            {wish.image?.asset?._ref ? (
+                              <img
+                                src={urlFor(wish.image).width(56).height(56).url()}
+                                alt={wish.username || "Anonymous"}
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <span className="text-2xl">{wish.username ? wish.username.charAt(0).toUpperCase() : '🎂'}</span>
+                            )}
+                          </div>
+                          <div className="min-w-0">
+                            <p className="font-bold text-zinc-800 text-lg truncate">
+                              {wish.username || 'Anonymous'}
+                            </p>
+                            <p className="text-sm text-zinc-500">
+                              {new Date(wish._createdAt).toLocaleDateString('en-US', {
+                                month: 'short',
+                                day: 'numeric',
+                                year: 'numeric'
+                              })}
+                            </p>
+                          </div>
+                        </div>
+                        <p className="text-zinc-700 leading-relaxed">{wish.message}</p>
                       </div>
-                    </div>
-                    <p className="text-zinc-600">Happy Birthday, Joselove! May your day be as bright and beautiful as you are. Enjoy every moment!</p>
-                  </div>
-                </div>
-
-                {/* Wish Card 3 */}
-                <div className="bg-white/70 rounded-xl shadow-lg backdrop-blur-sm overflow-hidden transform transition-all duration-300 hover:scale-105 hover:shadow-2xl">
-                  <div className="p-6 flex flex-col gap-4">
-                    <div className="flex items-center gap-4">
-                      <div 
-                        className="w-12 h-12 rounded-full bg-cover bg-center" 
-                        style={{ backgroundImage: 'url("https://lh3.googleusercontent.com/aida-public/AB6AXuC03VsrW_u1E8xuSErn6Qx4TzkMrLazMrUsyGonBCSCl5l6PoToBbg_NZI4meJsMR1_0Hf_h09XNaTd3sdg5K1PfkGVgoFzDnuMQe5Pd3F1nQoANcE1zDVYN7yU9OIRK7g46j_PjmXgb6ynsn1Z3CGOlPi-SUVhIkrM50HcHZm-NIx96iDDgE-FVkQ5b3pVRriOQ5PT0Xbb0D2VZi-8tStr2kNFVKOoz7GkEr5f5GQLAA6kxO4JPX_9Oulr1z8BiLqg4QvoHcmiN5E")' }}
-                      />
-                      <div>
-                        <p className="font-bold text-zinc-800 text-lg">From David</p>
-                      </div>
-                    </div>
-                    <p className="text-zinc-600">Happy Birthday, Joselove! Wishing you all the best on your special day. May your dreams come true!</p>
-                  </div>
-                </div>
-              </div>
+                    </motion.div>
+                  ))}
+                </motion.div>
+              )}
 
               <div className="mt-16 text-center">
                 <button 
@@ -207,19 +370,37 @@ const WishMe = () => {
       </div>
 
       {/* Wish Modal */}
-      {isModalOpen && (
-        <div className="fixed inset-0 bg-black/50 bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-xl max-w-md w-full p-6 relative">
-            <button 
-              onClick={() => setIsModalOpen(false)}
-              className="absolute top-4 right-4 text-gray-500 hover:text-gray-700"
+      <AnimatePresence>
+        {isModalOpen && (
+          <motion.div 
+            className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={(e) => e.target === e.currentTarget && setIsModalOpen(false)}
+          >
+            <motion.div 
+              className="bg-white rounded-2xl max-w-md w-full mx-4 relative overflow-hidden shadow-2xl"
+              initial={{ opacity: 0, y: 20, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 20, scale: 0.95 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
             >
-              <span className="material-symbols-outlined">close</span>
-            </button>
-            
-            <h2 className="text-2xl font-bold text-gray-900 mb-6">Send Your Wish</h2>
-            
-            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="p-6 sm:p-8">
+                <div className="flex justify-between items-center mb-6">
+                  <h2 className="text-2xl font-bold text-zinc-900">Send Your Wish</h2>
+                  <button 
+                    onClick={() => setIsModalOpen(false)}
+                    className="text-zinc-400 hover:text-zinc-600 transition-colors p-1 -mr-2"
+                    aria-label="Close"
+                  >
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+                
+                <form onSubmit={handleSubmit} className="space-y-4">
               {/* Image Upload */}
               <div className="space-y-2">
                 <label className="block text-sm font-medium text-gray-700">
@@ -304,10 +485,12 @@ const WishMe = () => {
                   Send Wish
                 </button>
               </div>
-            </form>
-          </div>
-        </div>
-      )}
+                </form>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

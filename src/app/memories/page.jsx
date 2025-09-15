@@ -1,8 +1,10 @@
 'use client';
 
 import React, { useState, useCallback, useRef, useEffect } from 'react';
+import { motion } from 'framer-motion';
 import Image from 'next/image';
 import Navbar from '../components/navbar';
+import Link from 'next/link';
 
 // Number of images to load per page
 const IMAGES_PER_PAGE = 12;
@@ -201,7 +203,26 @@ const imageFiles = [
 const Memories = () => {
   const [visibleImages, setVisibleImages] = useState(IMAGES_PER_PAGE);
   const [isLoading, setIsLoading] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
   const loader = useRef(null);
+
+  // Secret password - in a real app, this should be handled server-side
+  const SECRET_PASSWORD = '@birthday_girl'; // Change this to your desired password
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (password === SECRET_PASSWORD) {
+      setIsAuthenticated(true);
+    } else {
+      setError('Incorrect password');
+      // Redirect to home after 1.5 seconds
+      setTimeout(() => {
+        window.location.href = '/';
+      }, 1500);
+    }
+  };
 
   // Handle loading more images
   const loadMore = useCallback(() => {
@@ -255,63 +276,173 @@ const Memories = () => {
     });
   }
 
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-violet-200 to-pink-200 p-4">
+        <motion.div 
+          className="bg-white/80 backdrop-blur-sm p-8 rounded-xl shadow-xl max-w-md w-full"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+        >
+          <motion.div 
+            className="text-center mb-6"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.1 }}
+          >
+            <div className="mx-auto w-20 h-20 bg-pink-100 rounded-full flex items-center justify-center mb-4">
+              <span className="text-4xl">🔒</span>
+            </div>
+            <h1 className="text-3xl font-bold text-zinc-800">Protected Memories</h1>
+            <p className="mt-2 text-zinc-600">Enter the secret word to continue</p>
+          </motion.div>
+          
+          <motion.form 
+            onSubmit={handleSubmit} 
+            className="space-y-5"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+          >
+            <div>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full px-5 py-3 rounded-xl border border-zinc-300 focus:ring-2 focus:ring-fuchsia-500 focus:border-transparent text-center text-lg"
+                placeholder="Enter the secret word"
+                required
+              />
+              {error && (
+                <motion.p 
+                  className="mt-2 text-sm text-red-500"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                >
+                  {error}
+                </motion.p>
+              )}
+            </div>
+            <button
+              type="submit"
+              className="w-full bg-fuchsia-500 hover:bg-fuchsia-600 text-white font-medium py-3 px-6 rounded-xl transition-all duration-300 hover:shadow-lg"
+            >
+              Unlock Memories
+            </button>
+            <div className="text-center pt-2">
+              <Link href="/" className="text-slate-600 text-sm font-medium hover:text-fuchsia-500 transition-colors">
+                ← Back to Home
+              </Link>
+            </div>
+          </motion.form>
+        </motion.div>
+      </div>
+    );
+  }
+
   return (
     <div className="relative flex h-auto min-h-screen w-full flex-col bg-gradient-to-br from-violet-200 to-pink-200">
       <div className="layout-container flex h-full grow flex-col">
         <Navbar />
         
-        <main className="flex-1 py-10 px-4 sm:px-6 lg:px-8">
-          <div className="w-full max-w-6xl mx-auto">
-            <div className="text-center mb-12">
-              <h1 className="text-5xl font-extrabold text-zinc-900 tracking-tight">Memories</h1>
-              <p className="mt-4 text-lg text-zinc-600">Relive the joy and laughter from our special moments together.</p>
-            </div>
+        <main className="flex-1 pt-28 pb-16 px-4 sm:px-6 lg:px-8">
+          <div className="w-full max-w-7xl mx-auto">
+            <motion.div 
+              className="text-center mb-16"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
+            >
+              <h1 className="text-4xl md:text-5xl font-extrabold text-zinc-900 tracking-tight mb-4">
+                Our Memories
+              </h1>
+              <p className="text-lg text-zinc-600 max-w-2xl mx-auto">
+                Relive the joy and laughter from our special moments together.
+              </p>
+            </motion.div>
             
-            <div className="space-y-16">
-              {visibleSections.map((section) => (
-                <section key={section.id}>
-                  <h2 className="text-3xl font-bold text-zinc-800 mb-6 px-4">{section.title}</h2>
-                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            <div className="space-y-20">
+              {visibleSections.map((section, sectionIndex) => (
+                <motion.section 
+                  key={section.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5, delay: 0.1 * sectionIndex }}
+                >
+                  <h2 className="text-2xl md:text-3xl font-bold text-zinc-800 mb-8 text-center">
+                    {section.title}
+                  </h2>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
                     {section.images.map((img, index) => (
-                      <div 
+                      <motion.div 
                         key={`${section.id}-${index}`}
-                        className="group block overflow-hidden rounded-xl"
+                        className="group block overflow-hidden rounded-2xl shadow-lg hover:shadow-xl transition-shadow duration-300"
+                        whileHover={{ y: -5 }}
                       >
                         <div className="relative aspect-square w-full overflow-hidden">
                           <Image
                             src={img}
                             alt={`Memory ${index + 1}`}
                             fill
-                            className="object-cover transition-transform duration-300 group-hover:scale-105"
-                            sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33.33vw, 25vw"
-                            priority={index < 12} // Only prioritize loading first 12 images
+                            className="object-cover transition-transform duration-500 group-hover:scale-110"
+                            sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33.33vw, 25vw"
+                            priority={index < 12}
                           />
                         </div>
-                      </div>
+                      </motion.div>
                     ))}
                   </div>
-                </section>
+                </motion.section>
               ))}
               
               {visibleImages < imageFiles.length && (
-                <div ref={loader} className="flex justify-center py-8">
+                <motion.div 
+                  ref={loader} 
+                  className="flex justify-center pt-8"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5 }}
+                >
                   <button
                     onClick={loadMore}
                     disabled={isLoading}
-                    className="px-6 py-3 bg-fuchsia-500 text-white rounded-lg hover:bg-fuchsia-600 transition-colors disabled:opacity-50"
+                    className="px-8 py-3 bg-fuchsia-500 hover:bg-fuchsia-600 text-white font-medium rounded-xl transition-all duration-300 hover:shadow-lg flex items-center gap-2"
                   >
-                    {isLoading ? 'Loading...' : 'Load More Memories'}
+                    {isLoading ? (
+                      <>
+                        <svg className="animate-spin -ml-1 mr-2 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        Loading...
+                      </>
+                    ) : (
+                      <>
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                        </svg>
+                        Load More Memories
+                      </>
+                    )}
                   </button>
-                </div>
+                </motion.div>
               )}
             </div>
           </div>
         </main>
       </div>
-      <div className="flex flex-col items-center justify-center py-8">
-      <p>End of Memories</p>
-      <p>Total number of images {imageFiles.length}</p>
-      </div>
+      
+      <motion.div 
+        className="flex flex-col items-center justify-center py-10 bg-white/30 backdrop-blur-sm mt-12"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.2 }}
+      >
+        <p className="text-zinc-700 font-medium">You've reached the end of our memories</p>
+        <p className="text-sm text-zinc-500 mt-1">Total memories: {imageFiles.length} and counting...</p>
+      </motion.div>
     </div>
   );
 };
