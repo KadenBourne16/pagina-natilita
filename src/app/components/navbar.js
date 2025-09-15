@@ -18,7 +18,7 @@ export default function Navbar() {
             fillRule="evenodd"
           />
         </svg>
-        <h2 className="text-slate-900 text-xl font-bold leading-tight tracking-[-0.015em]">Sarah's Birthday Bash</h2>
+        <h2 className="text-slate-900 text-xl font-bold leading-tight tracking-[-0.015em]">Joselove's Birthday Bash</h2>
       </div>
       <nav className="flex items-center gap-8">
         <Link
@@ -29,7 +29,7 @@ export default function Navbar() {
         </Link>
         <Link
           className="text-slate-700 text-sm font-medium leading-normal hover:text-fuchsia-500 transition-colors"
-          href="#memories"
+          href="/memories"
         >
           Memories
         </Link>
@@ -41,19 +41,19 @@ export default function Navbar() {
         </Link>
         <Link
           className="text-slate-700 text-sm font-medium leading-normal hover:text-fuchsia-500 transition-colors"
-          href="#wish-me"
+          href="/wish-me"
         >
           Wish Me
         </Link>
         <Link
           className="text-slate-700 text-sm font-medium leading-normal hover:text-fuchsia-500 transition-colors"
-          href="#games"
+          href="/games"
         >
           Games
         </Link>
         <Link
           className="text-slate-700 text-sm font-medium leading-normal hover:text-fuchsia-500 transition-colors"
-          href="#gratitude"
+          href="/gratitude"
         >
           Gratitude
         </Link>

@@ -1,4 +1,5 @@
 import Navbar from "@/app/components/navbar"
+import Image from "next/image"
 import Link from "next/link"
 
 export default function HomePage() {
@@ -8,14 +9,15 @@ export default function HomePage() {
         <Navbar />
 
         <main className="flex-1 flex items-center justify-center p-8">
-          <div className="w-full max-w-6xl mx-auto">
-            <div className="grid lg:grid-cols-2 gap-12 items-center">
-              <div className="flex flex-col gap-6 text-left">
+          <div className="w-full max-w-5xl mx-auto">
+            <div className="grid lg:grid-cols-2 items-center">
+              <div className="flex flex-col gap-4 text-left">
                 <h1 className="text-slate-900 text-5xl font-black leading-tight tracking-tighter lg:text-6xl text-balance">
-                  Happy Birthday, Joselove!
+                  Happy Birthday, 
                 </h1>
+                  <span className="text-fuchsia-500 font-bold text-6xl animate-bounce">Joselove</span>
                 <p className="text-slate-700 text-base font-normal leading-relaxed lg:text-lg text-pretty">
-                  Join us in celebrating Sarah, a vibrant and talented soul who brings joy to everyone around her. Known
+                  Join us in celebrating Joselove, a vibrant and talented soul who brings joy to everyone around her. Known
                   for her infectious laughter, artistic passion, and unwavering kindness, she's a true gem. This website
                   is a collection of our love—wishes, memories, and fun moments—to make her day unforgettable as she
                   embarks on a new chapter.
@@ -28,14 +30,15 @@ export default function HomePage() {
                 </Link>
               </div>
 
-              <div className="w-full h-auto aspect-square bg-cover bg-center rounded-2xl shadow-2xl bg-gradient-to-br from-pink-300 to-purple-400 flex items-center justify-center">
-                <div className="text-white text-center p-8">
-                  <div className="w-32 h-32 bg-white/20 rounded-full mx-auto mb-4 flex items-center justify-center">
-                    <span className="text-4xl">🎂</span>
-                  </div>
-                  <p className="text-lg font-semibold">Joselove's Special Day</p>
-                  <p className="text-sm opacity-90">Celebrating 30 amazing years!</p>
-                </div>
+              <div className="relative w-[300px] h-auto mx-auto mt-14 shadow-gray-600 shadow-xl border-pink-500 border-4 rounded-xl overflow-hidden">
+                <Image
+                  src="/homeimage/joselovenobackground.png"
+                  alt="Joselove"
+                  width={400}
+                  height={400}
+                  className="w-full h-auto"
+                  priority
+                />  
               </div>
             </div>
           </div>

@@ -9,8 +9,8 @@ const plusJakartaSans = Plus_Jakarta_Sans({
 });
 
 export const metadata = {
-  title: "Sarah's Birthday Bash",
-  description: "A special birthday celebration website for Sarah",
+  title: "Joselove's Birthday Bash",
+  description: "A special birthday celebration website for Joselove",
   generator: "v0.app",
 };
 
