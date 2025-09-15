@@ -1,3 +1,4 @@
+"use server"
 import { client } from "@/sanity/lib/client";
 
 export const GetWishess = async() => {
