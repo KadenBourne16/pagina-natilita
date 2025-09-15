@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { sendUpdateToClients } from '../route';
+import { sendUpdateToClients } from '@/app/api/sse/route';
 
 export async function POST() {
   try {
