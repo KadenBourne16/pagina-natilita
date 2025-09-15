@@ -73,7 +73,7 @@ export default function Navbar() {
                 />
               </svg>
               <span className="text-slate-900 text-xl font-bold leading-tight tracking-tight hidden sm:inline">
-                Joselove's Birthday Bash
+                Joselove&apos;s Birthday Bash
               </span>
             </Link>
           </div>

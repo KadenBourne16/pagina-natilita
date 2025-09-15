@@ -1,5 +1,5 @@
+// src/sanity/lib/client.js
 import { createClient } from 'next-sanity'
-
 import { apiVersion, dataset, projectId, token } from '../env'
 
 export const client = createClient({
@@ -7,5 +7,6 @@ export const client = createClient({
   dataset,
   apiVersion,
   token,
-  useCdn: true, // Set to false if statically generating pages, using ISR or tag-based revalidation
+  useCdn: process.env.NODE_ENV === 'production', // Only use CDN in production
+  perspective: 'published', // Add this for better caching
 })

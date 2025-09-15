@@ -1,3 +1,4 @@
+"use client"
 import Navbar from "@/app/components/navbar"
 import Image from "next/image"
 import Link from "next/link"
@@ -35,7 +36,7 @@ export default function HomePage() {
                 </div>
                 <p className="text-slate-700 text-base font-normal leading-relaxed lg:text-lg text-pretty">
                   Join us in celebrating Joselove, a vibrant and talented soul who brings joy to everyone around her. Known
-                  for her infectious laughter, artistic passion, and unwavering kindness, she's a true gem. This website
+                  for her infectious laughter, artistic passion, and unwavering kindness, she&apos;s a true gem. This website
                   is a collection of our love—wishes, memories, and fun moments—to make her day unforgettable as she
                   embarks on a new chapter.
                 </p>
