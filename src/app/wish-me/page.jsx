@@ -7,7 +7,7 @@ import Image from 'next/image';
 const WishMe = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [formData, setFormData] = useState({
-    name: '',
+    username: '',
     message: '',
     image: null,
     imagePreview: ''
@@ -42,17 +42,54 @@ const WishMe = () => {
     }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log('Form submitted:', formData);
     
-    setFormData({
-      name: '',
-      message: '',
-      image: null,
-      imagePreview: ''
-    });
-    setIsModalOpen(false);
+    // Validate form fields
+    if (!formData.username.trim()) {
+      alert('Please enter your username');
+      return;
+    }
+    
+    if (!formData.message.trim()) {
+      alert('Please enter your birthday wish');
+      return;
+    }
+    
+    try {
+      const response = await fetch('/api/wish-message', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          username: formData.username,
+          message: formData.message
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to submit wish');
+      }
+      
+      // Reset form on successful submission
+      setFormData({
+        username: '',
+        message: '',
+        image: null,
+        imagePreview: ''
+      });
+      
+      // Close the modal
+      setIsModalOpen(false);
+      
+      // Show success message
+      alert('Your wish has been sent successfully! 🎉');
+      
+    } catch (error) {
+      console.error('Error submitting form:', error);
+      alert('There was an error sending your wish. Please try again.');
+    }
   };
 
   const triggerFileInput = () => {
@@ -220,18 +257,18 @@ const WishMe = () => {
 
               {/* Name Input */}
               <div>
-                <label htmlFor="name" className="block text-sm font-medium text-gray-700">
-                  Your Name *
+                <label htmlFor="username" className="block text-sm font-medium text-gray-700">
+                  Username *
                 </label>
                 <input
                   type="text"
-                  id="name"
-                  name="name"
-                  value={formData.name}
+                  id="username"
+                  name="username"
+                  value={formData.username}
                   onChange={handleInputChange}
                   required
                   className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-pink-500 focus:ring-pink-500 sm:text-sm p-2 border"
-                  placeholder="Enter your name"
+                  placeholder="Enter your username"
                 />
               </div>
 
