@@ -14,7 +14,6 @@ import Navbar from '../components/navbar';
 const WishMe = () => {
   const [wishes, setWishes] = useState([]);
 const [isLoading, setIsLoading] = useState(true);
-const eventSourceRef = useRef(null);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [formData, setFormData] = useState({
@@ -35,77 +34,26 @@ const eventSourceRef = useRef(null);
   };
 
   const fetchInformation = async() => {
-    const fetch_wishes_response = await GetWishess();
-    if(fetch_wishes_response.type === "success"){
-      setWishes(fetch_wishes_response.data)
+    try {
+      const fetch_wishes_response = await GetWishess();
+      if(fetch_wishes_response.type === "success"){
+        setWishes(fetch_wishes_response.data || []);
+      } else {
+        console.error('Failed to fetch wishes:', fetch_wishes_response.message);
+        toast.error('Failed to load wishes. Please try again later.');
+      }
+    } catch (error) {
+      console.error('Error fetching wishes:', error);
+      toast.error('An error occurred while loading wishes.');
+    } finally {
+      setIsLoading(false);
     }
-    console.log(fetch_wishes_response.data);
-  } 
+  }
 
 useEffect(() => {
   fetchInformation();
 }, [])
 
-useEffect(() => {
-  // Function to fetch wishes
-  const fetchWishes = async () => {
-    try {
-      const response = await fetch("/api/wishes");
-      if (!response.ok) throw new Error("Failed to fetch wishes");
-      if(response){
-        fetchInformation();
-      }
-
-    } catch (error) {
-      console.error("Error fetching wishes:", error);
-      toast.error("Failed to load wishes");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // Initial fetch
-  fetchWishes();
-
-  // Set up SSE connection
-  const setupSSE = () => {
-    const eventSource = new EventSource("/api/sse");
-
-    eventSource.onmessage = (event) => {
-      if (!event.data) return; // 👈 ignore heartbeat or empty events
-
-      try {
-        const data = JSON.parse(event.data);
-        if (data.type === "update") {
-          fetchWishes();
-        } else if (data.type === "connected") {
-          console.log("SSE connected");
-        }
-      } catch (err) {
-        console.warn("Non-JSON SSE message:", event.data);
-      }
-    };
-
-    eventSource.onerror = (error) => {
-      console.error("SSE Error:", error);
-      eventSource.close();
-
-      // Reconnect after 5s
-      setTimeout(setupSSE, 5000);
-    };
-
-    eventSourceRef.current = eventSource;
-  };
-
-  setupSSE();
-
-  // Cleanup on unmount
-  return () => {
-    if (eventSourceRef.current) {
-      eventSourceRef.current.close();
-    }
-  };
-}, []);
 
   const handleImageChange = (e) => {
     const file = e.target.files[0];
