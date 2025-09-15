@@ -9,11 +9,11 @@ export default function HomePage() {
       <div className="layout-container flex h-full grow flex-col">
         <Navbar />
 
-        <main className="flex-1 flex items-center justify-center p-8">
+        <main className="flex-1 flex items-center justify-center pt-24 px-4 pb-8 sm:pt-32 sm:px-8">
           <div className="w-full max-w-5xl mx-auto">
             <div className="flex flex-col items-center lg:grid lg:grid-cols-2 lg:items-center">
               {/* Image - Shown first on mobile, right on desktop */}
-              <div className="relative w-[200px] h-[200px] sm:w-[250px] sm:h-[250px] lg:w-[300px] lg:h-[300px] mx-auto mb-8 lg:mb-0 lg:order-2 lg:ml-auto">
+              <div className="relative w-[180px] h-[180px] sm:w-[250px] sm:h-[250px] lg:w-[300px] lg:h-[300px] mx-auto mt-8 sm:mt-0 mb-8 lg:mb-0 lg:order-2 lg:ml-auto">
                 <div className="w-full h-full rounded-full overflow-hidden border-4 border-pink-500 shadow-xl">
                   <Image
                     src="/homeimage/JoseloveNoBackground.jpg"
